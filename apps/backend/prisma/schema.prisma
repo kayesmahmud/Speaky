@@ -1,0 +1,58 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int       @id @default(autoincrement())
+  email            String    @unique
+  hashedPassword   String    @map("hashed_password")
+  name             String
+  nativeLanguage   String?   @map("native_language")
+  learningLanguage String?   @map("learning_language")
+  bio              String?
+  avatarUrl        String?   @map("avatar_url")
+  timezone         String?
+  isActive         Boolean   @default(true) @map("is_active")
+  lastActive       DateTime  @default(now()) @updatedAt @map("last_active")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  sentConnections     Connection[] @relation("SentConnections")
+  receivedConnections Connection[] @relation("ReceivedConnections")
+  sentMessages        Message[]
+
+  @@map("users")
+}
+
+model Connection {
+  id        Int      @id @default(autoincrement())
+  userAId   Int      @map("user_a_id")
+  userBId   Int      @map("user_b_id")
+  status    String   @default("pending") // pending, accepted, blocked
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userA    User      @relation("SentConnections", fields: [userAId], references: [id])
+  userB    User      @relation("ReceivedConnections", fields: [userBId], references: [id])
+  messages Message[]
+
+  @@map("connections")
+}
+
+model Message {
+  id           Int      @id @default(autoincrement())
+  connectionId Int      @map("connection_id")
+  senderId     Int      @map("sender_id")
+  content      String
+  type         String   @default("text") // text, image
+  createdAt    DateTime @default(now()) @map("created_at")
+  isFlagged    Boolean  @default(false) @map("is_flagged")
+
+  connection Connection @relation(fields: [connectionId], references: [id])
+  sender     User       @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
+}
