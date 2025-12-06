@@ -20,6 +20,8 @@ export class MessagesService {
       type: message.type,
       created_at: message.createdAt.toISOString(),
       is_flagged: message.isFlagged,
+      is_read: message.isRead,
+      read_at: message.readAt?.toISOString() || null,
     };
   }
 
@@ -32,7 +34,7 @@ export class MessagesService {
       orderBy: { createdAt: 'asc' },
     });
 
-    return messages.map(this.formatMessage);
+    return messages.map((m) => this.formatMessage(m));
   }
 
   async createMessage(userId: number, connectionId: number, dto: CreateMessageDto) {
@@ -49,5 +51,63 @@ export class MessagesService {
     });
 
     return this.formatMessage(message);
+  }
+
+  async markMessagesAsRead(userId: number, connectionId: number) {
+    // Validate access
+    await this.connectionsService.validateConnectionAccess(userId, connectionId);
+
+    // Mark all messages from the other user as read
+    const result = await this.prisma.message.updateMany({
+      where: {
+        connectionId,
+        senderId: { not: userId },
+        isRead: false,
+      },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+
+    return { marked_read: result.count };
+  }
+
+  async getUnreadCount(userId: number, connectionId: number) {
+    // Validate access
+    await this.connectionsService.validateConnectionAccess(userId, connectionId);
+
+    const count = await this.prisma.message.count({
+      where: {
+        connectionId,
+        senderId: { not: userId },
+        isRead: false,
+      },
+    });
+
+    return { unread_count: count };
+  }
+
+  async getTotalUnreadCount(userId: number) {
+    // Get all connections for this user
+    const connections = await this.prisma.connection.findMany({
+      where: {
+        OR: [{ userAId: userId }, { userBId: userId }],
+        status: 'accepted',
+      },
+      select: { id: true },
+    });
+
+    const connectionIds = connections.map((c) => c.id);
+
+    const count = await this.prisma.message.count({
+      where: {
+        connectionId: { in: connectionIds },
+        senderId: { not: userId },
+        isRead: false,
+      },
+    });
+
+    return { total_unread_count: count };
   }
 }

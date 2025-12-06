@@ -24,6 +24,7 @@ model User {
   sentConnections     Connection[] @relation("SentConnections")
   receivedConnections Connection[] @relation("ReceivedConnections")
   sentMessages        Message[]
+  corrections         Correction[]
 
   @@map("users")
 }
@@ -43,16 +44,45 @@ model Connection {
 }
 
 model Message {
-  id           Int      @id @default(autoincrement())
-  connectionId Int      @map("connection_id")
-  senderId     Int      @map("sender_id")
+  id           Int       @id @default(autoincrement())
+  connectionId Int       @map("connection_id")
+  senderId     Int       @map("sender_id")
   content      String
-  type         String   @default("text") // text, image
-  createdAt    DateTime @default(now()) @map("created_at")
-  isFlagged    Boolean  @default(false) @map("is_flagged")
+  type         String    @default("text") // text, image, voice
+  createdAt    DateTime  @default(now()) @map("created_at")
+  isFlagged    Boolean   @default(false) @map("is_flagged")
+  isRead       Boolean   @default(false) @map("is_read")
+  readAt       DateTime? @map("read_at")
 
-  connection Connection @relation(fields: [connectionId], references: [id])
-  sender     User       @relation(fields: [senderId], references: [id])
+  connection  Connection   @relation(fields: [connectionId], references: [id])
+  sender      User         @relation(fields: [senderId], references: [id])
+  corrections Correction[]
 
   @@map("messages")
+}
+
+model Correction {
+  id              Int      @id @default(autoincrement())
+  messageId       Int      @map("message_id")
+  correctorId     Int      @map("corrector_id")
+  originalText    String   @map("original_text")
+  correctedText   String   @map("corrected_text")
+  explanation     String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  message   Message @relation(fields: [messageId], references: [id])
+  corrector User    @relation(fields: [correctorId], references: [id])
+
+  @@map("corrections")
+}
+
+model Translation {
+  id             Int      @id @default(autoincrement())
+  messageId      Int      @map("message_id")
+  sourceLanguage String   @map("source_language")
+  targetLanguage String   @map("target_language")
+  translatedText String   @map("translated_text")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("translations")
 }

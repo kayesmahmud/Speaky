@@ -43,7 +43,7 @@ export interface Connection {
 }
 
 // Message types
-export type MessageType = 'text' | 'image';
+export type MessageType = 'text' | 'image' | 'voice';
 
 export interface Message {
   id: number;
@@ -53,6 +53,38 @@ export interface Message {
   type: MessageType;
   created_at: string;
   is_flagged: boolean;
+  is_read: boolean;
+  read_at: string | null;
+}
+
+// Correction types
+export interface Correction {
+  id: number;
+  message_id: number;
+  corrector_id: number;
+  original_text: string;
+  corrected_text: string;
+  explanation?: string;
+  created_at: string;
+  corrector?: {
+    id: number;
+    name: string;
+  };
+}
+
+// Translation types
+export interface Translation {
+  id: number;
+  message_id: number;
+  source_language: string;
+  target_language: string;
+  translated_text: string;
+  created_at: string;
+}
+
+export interface Language {
+  code: string;
+  name: string;
 }
 
 // Discovery types

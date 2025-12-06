@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import type { AuthToken, LoginRequest, RegisterRequest, User, DiscoveryUser, Connection, Message } from '../types';
+import type { AuthToken, LoginRequest, RegisterRequest, User, DiscoveryUser, Connection, Message, Correction, Translation, Language } from '../types';
 
 import { Platform } from 'react-native';
 
@@ -133,6 +133,120 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ content, type }),
     });
+  }
+
+  async markMessagesAsRead(connectionId: number): Promise<{ marked_read: number }> {
+    return this.request<{ marked_read: number }>(`/connections/${connectionId}/messages/read`, {
+      method: 'POST',
+    });
+  }
+
+  async getUnreadCount(connectionId: number): Promise<{ unread_count: number }> {
+    return this.request<{ unread_count: number }>(`/connections/${connectionId}/messages/unread`);
+  }
+
+  async getTotalUnreadCount(): Promise<{ total_unread_count: number }> {
+    return this.request<{ total_unread_count: number }>('/messages/unread');
+  }
+
+  // Correction endpoints
+  async createCorrection(messageId: number, correctedText: string, explanation?: string): Promise<Correction> {
+    return this.request<Correction>('/corrections', {
+      method: 'POST',
+      body: JSON.stringify({
+        message_id: messageId,
+        corrected_text: correctedText,
+        explanation,
+      }),
+    });
+  }
+
+  async getCorrectionsForMessage(messageId: number): Promise<Correction[]> {
+    return this.request<Correction[]>(`/corrections/message/${messageId}`);
+  }
+
+  async getMyCorrections(): Promise<Correction[]> {
+    return this.request<Correction[]>('/corrections/my');
+  }
+
+  async deleteCorrection(correctionId: number): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/corrections/${correctionId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Translation endpoints
+  async translateMessage(messageId: number, targetLanguage: string, sourceLanguage?: string): Promise<Translation> {
+    return this.request<Translation>('/translations/message', {
+      method: 'POST',
+      body: JSON.stringify({
+        message_id: messageId,
+        target_language: targetLanguage,
+        source_language: sourceLanguage,
+      }),
+    });
+  }
+
+  async translateText(text: string, targetLanguage: string, sourceLanguage?: string): Promise<{ original_text: string; translated_text: string; source_language: string; target_language: string }> {
+    return this.request('/translations/text', {
+      method: 'POST',
+      body: JSON.stringify({
+        text,
+        target_language: targetLanguage,
+        source_language: sourceLanguage,
+      }),
+    });
+  }
+
+  async getSupportedLanguages(): Promise<Language[]> {
+    return this.request<Language[]>('/translations/languages');
+  }
+
+  // Upload endpoints
+  async uploadAvatar(file: { uri: string; type: string; name: string }): Promise<{ avatar_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file as any);
+
+    const response = await fetch(`${API_BASE_URL}/uploads/avatar`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(error.detail || 'Upload failed');
+    }
+
+    return response.json();
+  }
+
+  async deleteAvatar(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/uploads/avatar', {
+      method: 'DELETE',
+    });
+  }
+
+  async uploadMessageImage(connectionId: number, file: { uri: string; type: string; name: string }): Promise<{ image_url: string }> {
+    const formData = new FormData();
+    formData.append('file', file as any);
+
+    const response = await fetch(`${API_BASE_URL}/uploads/message/${connectionId}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(error.detail || 'Upload failed');
+    }
+
+    return response.json();
   }
 
   // Health check

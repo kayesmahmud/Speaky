@@ -170,4 +170,61 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       isTyping: data.isTyping,
     });
   }
+
+  @SubscribeMessage('mark_read')
+  async handleMarkRead(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { connectionId: number; messageIds?: number[] },
+  ) {
+    if (!client.userId) return;
+
+    // Verify access
+    const connection = await this.prisma.connection.findFirst({
+      where: {
+        id: data.connectionId,
+        OR: [{ userAId: client.userId }, { userBId: client.userId }],
+        status: 'accepted',
+      },
+    });
+
+    if (!connection) return;
+
+    // Mark messages as read
+    if (data.messageIds && data.messageIds.length > 0) {
+      await this.prisma.message.updateMany({
+        where: {
+          id: { in: data.messageIds },
+          connectionId: data.connectionId,
+          senderId: { not: client.userId },
+          isRead: false,
+        },
+        data: {
+          isRead: true,
+          readAt: new Date(),
+        },
+      });
+    } else {
+      // Mark all unread messages as read
+      await this.prisma.message.updateMany({
+        where: {
+          connectionId: data.connectionId,
+          senderId: { not: client.userId },
+          isRead: false,
+        },
+        data: {
+          isRead: true,
+          readAt: new Date(),
+        },
+      });
+    }
+
+    // Notify the sender that messages were read
+    const roomName = `connection_${data.connectionId}`;
+    client.to(roomName).emit('messages_read', {
+      connectionId: data.connectionId,
+      readBy: client.userId,
+      readAt: new Date().toISOString(),
+      messageIds: data.messageIds || [],
+    });
+  }
 }

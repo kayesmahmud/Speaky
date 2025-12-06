@@ -3,27 +3,47 @@ import { MessagesService } from './messages.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateMessageDto } from './dto/message.dto';
-import { User } from '@prisma/client';
 
-@Controller('connections/:connectionId/messages')
+@Controller('api')
 @UseGuards(JwtAuthGuard)
 export class MessagesController {
   constructor(private messagesService: MessagesService) {}
 
-  @Get()
+  @Get('connections/:connectionId/messages')
   async getMessages(
-    @CurrentUser() user: User,
+    @CurrentUser('sub') userId: number,
     @Param('connectionId', ParseIntPipe) connectionId: number,
   ) {
-    return this.messagesService.getMessages(user.id, connectionId);
+    return this.messagesService.getMessages(userId, connectionId);
   }
 
-  @Post()
+  @Post('connections/:connectionId/messages')
   async createMessage(
-    @CurrentUser() user: User,
+    @CurrentUser('sub') userId: number,
     @Param('connectionId', ParseIntPipe) connectionId: number,
     @Body() dto: CreateMessageDto,
   ) {
-    return this.messagesService.createMessage(user.id, connectionId, dto);
+    return this.messagesService.createMessage(userId, connectionId, dto);
+  }
+
+  @Post('connections/:connectionId/messages/read')
+  async markMessagesAsRead(
+    @CurrentUser('sub') userId: number,
+    @Param('connectionId', ParseIntPipe) connectionId: number,
+  ) {
+    return this.messagesService.markMessagesAsRead(userId, connectionId);
+  }
+
+  @Get('connections/:connectionId/messages/unread')
+  async getUnreadCount(
+    @CurrentUser('sub') userId: number,
+    @Param('connectionId', ParseIntPipe) connectionId: number,
+  ) {
+    return this.messagesService.getUnreadCount(userId, connectionId);
+  }
+
+  @Get('messages/unread')
+  async getTotalUnreadCount(@CurrentUser('sub') userId: number) {
+    return this.messagesService.getTotalUnreadCount(userId);
   }
 }
