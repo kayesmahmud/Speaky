@@ -1,8 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import type { AuthToken, LoginRequest, RegisterRequest, User, DiscoveryUser, Connection, Message, Correction, Translation, Language, Partner, Post, PostComment } from '../types';
 
-import { Platform } from 'react-native';
-
 // Get the correct API URL based on platform
 function getApiUrl(): string {
   if (!__DEV__) {
@@ -205,7 +203,8 @@ class ApiClient {
   // Upload endpoints
   async uploadAvatar(file: { uri: string; type: string; name: string }): Promise<{ avatar_url: string }> {
     const formData = new FormData();
-    formData.append('file', file as any);
+    const fileField = { uri: file.uri, type: file.type, name: file.name } as unknown as Blob;
+    formData.append('file', fileField);
 
     const response = await fetch(`${API_BASE_URL}/uploads/avatar`, {
       method: 'POST',
@@ -231,7 +230,8 @@ class ApiClient {
 
   async uploadMessageImage(connectionId: number, file: { uri: string; type: string; name: string }): Promise<{ image_url: string }> {
     const formData = new FormData();
-    formData.append('file', file as any);
+    const fileField = { uri: file.uri, type: file.type, name: file.name } as unknown as Blob;
+    formData.append('file', fileField);
 
     const response = await fetch(`${API_BASE_URL}/uploads/message/${connectionId}`, {
       method: 'POST',

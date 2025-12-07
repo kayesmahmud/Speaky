@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 // User types
 export interface User {
   id: number;
@@ -40,6 +42,22 @@ export interface Connection {
   user_b: number;
   status: ConnectionStatus;
   created_at: string;
+  partner?: {
+    id: number;
+    name: string;
+    avatar_url?: string;
+    native_language?: string;
+    learning_language?: string;
+    is_online?: boolean;
+  };
+  last_message?: {
+    id: number;
+    content: string;
+    sender_id: number;
+    created_at: string;
+    is_read: boolean;
+  } | null;
+  unread_count?: number;
 }
 
 // Message types
@@ -153,8 +171,8 @@ export type AuthStackParamList = {
 
 export type MainTabParamList = {
   Feed: undefined;
-  Partners: undefined;
-  Messages: undefined;
+  Partners: NavigatorScreenParams<PartnersStackParamList> | undefined;
+  Messages: NavigatorScreenParams<MessagesStackParamList> | undefined;
   Profile: undefined;
 };
 

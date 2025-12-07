@@ -12,17 +12,16 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { api } from '../services/api';
-import { useAuthStore } from '../stores/auth';
 import type { Post } from '../types';
 
 dayjs.extend(relativeTime);
 
 export function FeedScreen() {
-  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
@@ -97,16 +96,18 @@ export function FeedScreen() {
             style={styles.actionButton}
             onPress={() => handleLike(item.id)}
           >
-            <Text style={[styles.actionIcon, item.is_liked && styles.liked]}>
-              {item.is_liked ? '♥' : '♡'}
-            </Text>
+            <Ionicons
+              name={item.is_liked ? 'heart' : 'heart-outline'}
+              size={22}
+              color={item.is_liked ? '#ff3b30' : '#666'}
+            />
             <Text style={[styles.actionText, item.is_liked && styles.liked]}>
               {item.likes_count}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionIcon}>💬</Text>
+            <Ionicons name="chatbubble-outline" size={22} color="#666" />
             <Text style={styles.actionText}>{item.comments_count}</Text>
           </TouchableOpacity>
         </View>
@@ -321,10 +322,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 24,
-  },
-  actionIcon: {
-    fontSize: 20,
-    marginRight: 6,
+    gap: 6,
   },
   actionText: {
     fontSize: 14,

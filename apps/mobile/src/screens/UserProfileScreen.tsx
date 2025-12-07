@@ -8,11 +8,13 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
+import { Ionicons } from '@expo/vector-icons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { api } from '../services/api';
+import { startConversationAndNavigate } from '../utils/conversations';
 import type { PartnersStackParamList } from '../types';
 
 type NavigationProp = NativeStackNavigationProp<PartnersStackParamList, 'UserProfile'>;
@@ -21,6 +23,7 @@ type UserProfileRouteProp = RouteProp<PartnersStackParamList, 'UserProfile'>;
 export function UserProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<UserProfileRouteProp>();
+  const queryClient = useQueryClient();
   const { userId, userName } = route.params;
 
   // For now, we'll use the partners data since we don't have a dedicated user profile endpoint
@@ -33,15 +36,18 @@ export function UserProfileScreen() {
 
   const handleStartChat = async () => {
     try {
-      const conversation = await api.startConversation(userId);
-      // Navigate to Messages tab and then to Chat
-      navigation.getParent()?.navigate('Messages', {
-        screen: 'Chat',
-        params: {
-          connectionId: conversation.id,
-          userName: userName,
-        },
-      });
+      await startConversationAndNavigate(
+        userId,
+        queryClient,
+        (connectionId) =>
+          navigation.getParent()?.navigate('Messages', {
+            screen: 'Chat',
+            params: {
+              connectionId,
+              userName,
+            },
+          }),
+      );
     } catch (error) {
       console.error('Failed to start conversation:', error);
     }
@@ -60,7 +66,8 @@ export function UserProfileScreen() {
       {/* Header with back button */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Ionicons name="arrow-back" size={20} color="#007aff" />
+          <Text style={styles.backButtonText}>Back</Text>
         </TouchableOpacity>
       </View>
 
@@ -104,9 +111,12 @@ export function UserProfileScreen() {
               </View>
             )}
 
-            <Text style={styles.statusText}>
-              {user.is_online ? '🟢 Online now' : '⚪ Offline'}
-            </Text>
+            <View style={styles.statusContainer}>
+              <View style={[styles.statusDot, user.is_online ? styles.online : styles.offline]} />
+              <Text style={styles.statusText}>
+                {user.is_online ? 'Online now' : 'Offline'}
+              </Text>
+            </View>
           </>
         )}
       </View>
@@ -114,7 +124,8 @@ export function UserProfileScreen() {
       {/* Action Buttons */}
       <View style={styles.actionsContainer}>
         <TouchableOpacity style={styles.chatButton} onPress={handleStartChat}>
-          <Text style={styles.chatButtonText}>💬 Start Chat</Text>
+          <Ionicons name="chatbubble" size={18} color="#fff" />
+          <Text style={styles.chatButtonText}>Start Chat</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -140,7 +151,10 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e0e0e0',
   },
   backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 4,
+    gap: 4,
   },
   backButtonText: {
     fontSize: 16,
@@ -229,20 +243,33 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
   },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 6,
+  },
+  statusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
   statusText: {
     fontSize: 14,
     color: '#666',
-    marginTop: 16,
   },
   actionsContainer: {
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
   chatButton: {
+    flexDirection: 'row',
     backgroundColor: '#007aff',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
   chatButtonText: {
     color: '#fff',

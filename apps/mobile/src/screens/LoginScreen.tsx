@@ -136,12 +136,12 @@ export function LoginScreen({ navigation }: Props) {
             )}
           </TouchableOpacity>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.footerLink}>Sign Up</Text>
-            </TouchableOpacity>
-          </View>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Don&apos;t have an account? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+          <Text style={styles.footerLink}>Sign Up</Text>
+        </TouchableOpacity>
+      </View>
         </View>
       </View>
     </KeyboardAvoidingView>

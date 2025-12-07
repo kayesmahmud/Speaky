@@ -17,6 +17,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { api } from '../services/api';
+import { startConversationAndNavigate } from '../utils/conversations';
 import type { Partner, PartnersStackParamList, MainTabParamList } from '../types';
 
 dayjs.extend(relativeTime);
@@ -39,20 +40,22 @@ export function PartnersScreen() {
   // Navigate to Messages tab and open chat
   const handleChatPress = useCallback(async (partner: Partner) => {
     try {
-      // Start or get existing conversation
-      const conversation = await api.startConversation(partner.id);
-      // Navigate to Messages tab, then to Chat screen
-      navigation.navigate('Messages', {
-        screen: 'Chat',
-        params: {
-          connectionId: conversation.id,
-          userName: partner.name,
-        },
-      } as any);
+      await startConversationAndNavigate(
+        partner.id,
+        queryClient,
+        (connectionId) =>
+          navigation.navigate('Messages', {
+            screen: 'Chat',
+            params: {
+              connectionId,
+              userName: partner.name,
+            },
+          }),
+      );
     } catch (error) {
       console.error('Failed to start conversation:', error);
     }
-  }, [navigation]);
+  }, [navigation, queryClient]);
 
   // Navigate to user profile when clicking avatar
   const handleAvatarPress = useCallback((partner: Partner) => {
@@ -137,7 +140,7 @@ export function PartnersScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Language Partners</Text>
         <Text style={styles.headerSubtitle}>
-          People who speak what you're learning
+          People who speak what you&apos;re learning
         </Text>
       </View>
 
@@ -153,7 +156,7 @@ export function PartnersScreen() {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No partners found</Text>
             <Text style={styles.emptySubtext}>
-              Make sure you've set your native and learning languages in your profile
+              Make sure you&apos;ve set your native and learning languages in your profile
             </Text>
           </View>
         }

@@ -53,6 +53,7 @@ export function RegisterScreen({ navigation }: Props) {
     try {
       clearError();
       const { confirmPassword, ...registerData } = data;
+      void confirmPassword;
       await registerUser(registerData);
     } catch {
       Alert.alert('Registration Failed', error || 'Please try again');

@@ -12,6 +12,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import dayjs from 'dayjs';
@@ -29,7 +30,7 @@ function getSocketUrl(): string {
   return 'http://192.168.1.153:8000';
 }
 
-export function ChatScreen({ route }: Props) {
+export function ChatScreen({ route, navigation }: Props) {
   const { connectionId, userName } = route.params;
   const { user } = useAuthStore();
   const [messageText, setMessageText] = useState('');
@@ -40,7 +41,6 @@ export function ChatScreen({ route }: Props) {
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [correctionText, setCorrectionText] = useState('');
   const [explanationText, setExplanationText] = useState('');
-  const [translatedText, setTranslatedText] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const listRef = useRef<FlatList<Message>>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -165,10 +165,6 @@ export function ChatScreen({ route }: Props) {
     setSelectedMessage(message);
     const isOwnMessage = message.sender_id === user?.id;
 
-    const options = isOwnMessage
-      ? ['Translate', 'Cancel']
-      : ['Correct', 'Translate', 'Cancel'];
-
     Alert.alert('Message Options', 'What would you like to do?', [
       ...(isOwnMessage
         ? []
@@ -187,9 +183,8 @@ export function ChatScreen({ route }: Props) {
           try {
             const targetLang = user?.learning_language || 'EN';
             const result = await api.translateMessage(message.id, targetLang);
-            setTranslatedText(result.translated_text);
             Alert.alert('Translation', result.translated_text);
-          } catch (error) {
+          } catch {
             Alert.alert('Error', 'Failed to translate message');
           }
         },
@@ -208,7 +203,7 @@ export function ChatScreen({ route }: Props) {
       setExplanationText('');
       setSelectedMessage(null);
       Alert.alert('Success', 'Correction sent!');
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to send correction');
     }
   }, [selectedMessage, correctionText, explanationText]);
@@ -236,9 +231,11 @@ export function ChatScreen({ route }: Props) {
               {dayjs(item.created_at).format('HH:mm')}
             </Text>
             {isOwnMessage && (
-              <Text style={[styles.readStatus, item.is_read && styles.readStatusRead]}>
-                {item.is_read ? '✓✓' : '✓'}
-              </Text>
+              <Ionicons
+                name={item.is_read ? 'checkmark-done' : 'checkmark'}
+                size={14}
+                color={item.is_read ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)'}
+              />
             )}
           </View>
         </View>
@@ -261,7 +258,17 @@ export function ChatScreen({ route }: Props) {
       keyboardVerticalOffset={90}
     >
       <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => {
+            queryClient.invalidateQueries({ queryKey: ['connections'] });
+            navigation.goBack();
+          }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#007aff" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>{userName}</Text>
+        <View style={styles.headerSpacer} />
       </View>
 
       <FlatList
@@ -376,15 +383,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingTop: 60,
     paddingBottom: 16,
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '600',
     color: '#111',
     textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 40,
   },
   messageList: {
     padding: 16,
@@ -481,13 +500,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginTop: 4,
     gap: 4,
-  },
-  readStatus: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.5)',
-  },
-  readStatusRead: {
-    color: 'rgba(255,255,255,0.9)',
   },
   typingIndicator: {
     paddingHorizontal: 16,

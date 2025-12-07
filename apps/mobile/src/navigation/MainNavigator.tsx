@@ -1,7 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Text, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import {
   ConnectionsScreen,
   ChatScreen,
@@ -53,30 +54,26 @@ function PartnersNavigator() {
   );
 }
 
-// Simple tab icons using text/emoji
-function TabIcon({ label, focused }: { label: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Feed: '📰',
-    Partners: '🌍',
-    Messages: '💬',
-    Profile: '👤',
-  };
+type IconName = 'newspaper' | 'newspaper-outline' | 'globe' | 'globe-outline' |
+  'chatbubbles' | 'chatbubbles-outline' | 'person' | 'person-outline';
 
-  return (
-    <Text style={[styles.tabIcon, focused && styles.tabIconFocused]}>
-      {icons[label]}
-    </Text>
-  );
-}
+const tabIcons: Record<string, { focused: IconName; unfocused: IconName }> = {
+  Feed: { focused: 'newspaper', unfocused: 'newspaper-outline' },
+  Partners: { focused: 'globe', unfocused: 'globe-outline' },
+  Messages: { focused: 'chatbubbles', unfocused: 'chatbubbles-outline' },
+  Profile: { focused: 'person', unfocused: 'person-outline' },
+};
 
 export function MainNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarIcon: ({ focused }) => (
-          <TabIcon label={route.name} focused={focused} />
-        ),
+        tabBarIcon: ({ focused, color }) => {
+          const icons = tabIcons[route.name];
+          const iconName = focused ? icons.focused : icons.unfocused;
+          return <Ionicons name={iconName} size={24} color={color} />;
+        },
         tabBarActiveTintColor: '#007aff',
         tabBarInactiveTintColor: '#999',
         tabBarStyle: styles.tabBar,
@@ -117,12 +114,5 @@ const styles = StyleSheet.create({
   tabBarLabel: {
     fontSize: 11,
     fontWeight: '500',
-  },
-  tabIcon: {
-    fontSize: 24,
-    opacity: 0.6,
-  },
-  tabIconFocused: {
-    opacity: 1,
   },
 });
