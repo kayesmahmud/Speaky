@@ -31,9 +31,9 @@ import { AppController } from './app.controller';
     DiscoveryModule,
     ConnectionsModule,
     MessagesModule,
-    PartnersModule,
-    FeedModule,
+    PartnersModule,  // Must be before ChatModule (ChatModule depends on PartnersService)
     ChatModule,
+    FeedModule,
     CorrectionsModule,
     TranslationsModule,
     UploadsModule,

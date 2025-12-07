@@ -16,6 +16,9 @@
         "backgroundColor": "#ffffff"
       }
     },
-    "web": {}
+    "web": {},
+    "packagerOpts": {
+      "port": 8091
+    }
   }
 }

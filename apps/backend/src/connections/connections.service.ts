@@ -70,6 +70,7 @@ export class ConnectionsService {
             avatarUrl: true,
             nativeLanguage: true,
             learningLanguage: true,
+            isOnline: true,
           },
         },
         userB: {
@@ -79,14 +80,53 @@ export class ConnectionsService {
             avatarUrl: true,
             nativeLanguage: true,
             learningLanguage: true,
+            isOnline: true,
+          },
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            content: true,
+            senderId: true,
+            createdAt: true,
+            isRead: true,
           },
         },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    return connections.map((conn) => {
+    // Get unread counts for each connection
+    const unreadCounts = await Promise.all(
+      connections.map(async (conn) => {
+        const count = await this.prisma.message.count({
+          where: {
+            connectionId: conn.id,
+            senderId: { not: userId },
+            isRead: false,
+          },
+        });
+        return { connectionId: conn.id, count };
+      })
+    );
+
+    const unreadMap = new Map(unreadCounts.map((u) => [u.connectionId, u.count]));
+
+    // Sort by last message time (most recent first)
+    const sortedConnections = connections.sort((a, b) => {
+      const aLastMsg = a.messages[0]?.createdAt;
+      const bLastMsg = b.messages[0]?.createdAt;
+      if (!aLastMsg && !bLastMsg) return 0;
+      if (!aLastMsg) return 1;
+      if (!bLastMsg) return -1;
+      return bLastMsg.getTime() - aLastMsg.getTime();
+    });
+
+    return sortedConnections.map((conn) => {
       const partner = conn.userAId === userId ? conn.userB : conn.userA;
+      const lastMessage = conn.messages[0];
       return {
         id: conn.id,
         user_a: conn.userAId,
@@ -99,7 +139,18 @@ export class ConnectionsService {
           avatar_url: partner.avatarUrl,
           native_language: partner.nativeLanguage,
           learning_language: partner.learningLanguage,
+          is_online: partner.isOnline,
         },
+        last_message: lastMessage
+          ? {
+              id: lastMessage.id,
+              content: lastMessage.content,
+              sender_id: lastMessage.senderId,
+              created_at: lastMessage.createdAt.toISOString(),
+              is_read: lastMessage.isRead,
+            }
+          : null,
+        unread_count: unreadMap.get(conn.id) || 0,
       };
     });
   }
