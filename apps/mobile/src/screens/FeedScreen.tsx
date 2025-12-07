@@ -11,13 +11,15 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { api } from '../services/api';
-import type { Post } from '../types';
+import type { Post, PostComment } from '../types';
 
 dayjs.extend(relativeTime);
 
@@ -25,6 +27,9 @@ export function FeedScreen() {
   const queryClient = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newPostContent, setNewPostContent] = useState('');
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [newComment, setNewComment] = useState('');
 
   const { data: posts, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['feed'],
@@ -50,6 +55,37 @@ export function FeedScreen() {
     },
   });
 
+  // Comments query - only fetch when modal is open
+  const { data: comments, isLoading: commentsLoading, refetch: refetchComments } = useQuery({
+    queryKey: ['comments', selectedPost?.id],
+    queryFn: () => selectedPost ? api.getComments(selectedPost.id) : Promise.resolve([]),
+    enabled: showCommentsModal && !!selectedPost,
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: ({ postId, content }: { postId: number; content: string }) =>
+      api.addComment(postId, content),
+    onSuccess: () => {
+      refetchComments();
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+      setNewComment('');
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to add comment');
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: (commentId: number) => api.deleteComment(commentId),
+    onSuccess: () => {
+      refetchComments();
+      queryClient.invalidateQueries({ queryKey: ['feed'] });
+    },
+    onError: () => {
+      Alert.alert('Error', 'Failed to delete comment');
+    },
+  });
+
   const handleCreatePost = useCallback(() => {
     if (!newPostContent.trim()) return;
     createPostMutation.mutate(newPostContent.trim());
@@ -58,6 +94,58 @@ export function FeedScreen() {
   const handleLike = useCallback((postId: number) => {
     likeMutation.mutate(postId);
   }, [likeMutation]);
+
+  const handleOpenComments = useCallback((post: Post) => {
+    setSelectedPost(post);
+    setShowCommentsModal(true);
+  }, []);
+
+  const handleCloseComments = useCallback(() => {
+    setShowCommentsModal(false);
+    setSelectedPost(null);
+    setNewComment('');
+  }, []);
+
+  const handleAddComment = useCallback(() => {
+    if (!newComment.trim() || !selectedPost) return;
+    addCommentMutation.mutate({ postId: selectedPost.id, content: newComment.trim() });
+  }, [newComment, selectedPost, addCommentMutation]);
+
+  const handleDeleteComment = useCallback((commentId: number) => {
+    Alert.alert(
+      'Delete Comment',
+      'Are you sure you want to delete this comment?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => deleteCommentMutation.mutate(commentId) },
+      ]
+    );
+  }, [deleteCommentMutation]);
+
+  const renderComment = useCallback(({ item }: { item: PostComment }) => (
+    <TouchableOpacity
+      style={styles.commentItem}
+      onLongPress={() => handleDeleteComment(item.id)}
+      delayLongPress={500}
+    >
+      <View style={styles.commentHeader}>
+        {item.user.avatar_url ? (
+          <Image source={{ uri: item.user.avatar_url }} style={styles.commentAvatar} />
+        ) : (
+          <View style={styles.commentAvatarPlaceholder}>
+            <Text style={styles.commentAvatarText}>{item.user.name.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
+        <View style={styles.commentContent}>
+          <View style={styles.commentMeta}>
+            <Text style={styles.commentAuthor}>{item.user.name}</Text>
+            <Text style={styles.commentTime}>{dayjs(item.created_at).fromNow()}</Text>
+          </View>
+          <Text style={styles.commentText}>{item.content}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  ), [handleDeleteComment]);
 
   const renderPost = useCallback(({ item }: { item: Post }) => {
     return (
@@ -106,14 +194,14 @@ export function FeedScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => handleOpenComments(item)}>
             <Ionicons name="chatbubble-outline" size={22} color="#666" />
             <Text style={styles.actionText}>{item.comments_count}</Text>
           </TouchableOpacity>
         </View>
       </View>
     );
-  }, [handleLike]);
+  }, [handleLike, handleOpenComments]);
 
   if (isLoading) {
     return (
@@ -193,6 +281,74 @@ export function FeedScreen() {
             />
           </View>
         </View>
+      </Modal>
+
+      {/* Comments Modal */}
+      <Modal
+        visible={showCommentsModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseComments}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.commentsModalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={handleCloseComments}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Comments</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            {commentsLoading ? (
+              <View style={styles.commentsLoading}>
+                <ActivityIndicator size="small" color="#007aff" />
+              </View>
+            ) : (
+              <FlatList
+                data={comments || []}
+                renderItem={renderComment}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={styles.commentsList}
+                ListEmptyComponent={
+                  <View style={styles.emptyComments}>
+                    <Text style={styles.emptyCommentsText}>No comments yet</Text>
+                    <Text style={styles.emptyCommentsSubtext}>Be the first to comment!</Text>
+                  </View>
+                }
+              />
+            )}
+
+            <View style={styles.commentInputContainer}>
+              <TextInput
+                style={styles.commentInput}
+                placeholder="Write a comment..."
+                placeholderTextColor="#999"
+                value={newComment}
+                onChangeText={setNewComment}
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity
+                style={[
+                  styles.sendCommentButton,
+                  (!newComment.trim() || addCommentMutation.isPending) && styles.sendCommentButtonDisabled,
+                ]}
+                onPress={handleAddComment}
+                disabled={!newComment.trim() || addCommentMutation.isPending}
+              >
+                {addCommentMutation.isPending ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="send" size={18} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -385,5 +541,120 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     textAlignVertical: 'top',
+  },
+  // Comments styles
+  commentsModalContent: {
+    flex: 1,
+    backgroundColor: '#fff',
+    marginTop: 100,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  commentsLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  commentsList: {
+    padding: 16,
+    flexGrow: 1,
+  },
+  emptyComments: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyCommentsText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  emptyCommentsSubtext: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  commentItem: {
+    marginBottom: 16,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  commentAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginRight: 10,
+  },
+  commentAvatarPlaceholder: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#007aff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  commentAvatarText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  commentContent: {
+    flex: 1,
+    backgroundColor: '#f5f5f7',
+    borderRadius: 12,
+    padding: 10,
+  },
+  commentMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  commentAuthor: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111',
+    marginRight: 8,
+  },
+  commentTime: {
+    fontSize: 12,
+    color: '#999',
+  },
+  commentText: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    backgroundColor: '#fff',
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: '#f5f5f7',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 15,
+    maxHeight: 100,
+    marginRight: 10,
+  },
+  sendCommentButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007aff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendCommentButtonDisabled: {
+    backgroundColor: '#ccc',
   },
 });
