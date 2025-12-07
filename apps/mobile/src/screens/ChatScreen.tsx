@@ -11,14 +11,20 @@ import {
   FlatList,
   Modal,
   Alert,
+  Image,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import dayjs from 'dayjs';
 import { api } from '../services/api';
 import type { Message, MessagesStackParamList } from '../types';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { colors } from '../theme';
+import { computeWordDiff, DiffSegment } from '../utils/diff';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type Props = NativeStackScreenProps<MessagesStackParamList, 'Chat'>;
 
@@ -32,6 +38,8 @@ export function ChatScreen({ route, navigation }: Props) {
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [correctionText, setCorrectionText] = useState('');
   const [explanationText, setExplanationText] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const listRef = useRef<FlatList<Message>>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -150,12 +158,83 @@ export function ChatScreen({ route, navigation }: Props) {
     }
   }, [selectedMessage, correctionText, explanationText]);
 
+  const handlePickImage = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission needed', 'Please grant permission to access your photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setIsUploadingImage(true);
+
+      try {
+        const fileUri = asset.uri;
+        const fileName = fileUri.split('/').pop() || 'image.jpg';
+        const fileType = asset.mimeType || 'image/jpeg';
+
+        // Upload the image
+        const uploadResult = await api.uploadMessageImage(connectionId, {
+          uri: fileUri,
+          type: fileType,
+          name: fileName,
+        });
+
+        // Send image message via socket or API
+        if (socket?.connected) {
+          socket.emit('send_message', {
+            connectionId,
+            content: uploadResult.image_url,
+            type: 'image',
+          });
+        } else {
+          const newMessage = await api.sendMessage(connectionId, uploadResult.image_url, 'image');
+          queryClient.setQueryData(['messages', connectionId], (old: Message[] = []) => [
+            ...old,
+            newMessage,
+          ]);
+        }
+      } catch (error) {
+        console.error('Failed to send image:', error);
+        Alert.alert('Error', 'Failed to send image');
+      } finally {
+        setIsUploadingImage(false);
+      }
+    }
+  }, [connectionId, socket, queryClient]);
+
+  // Render diff segments with highlighting
+  const renderDiffText = useCallback((segments: DiffSegment[]) => {
+    return segments.map((segment, index) => {
+      let style = {};
+      if (segment.type === 'delete') {
+        style = styles.diffDelete;
+      } else if (segment.type === 'insert') {
+        style = styles.diffInsert;
+      }
+      return (
+        <Text key={index} style={style}>
+          {segment.text}
+        </Text>
+      );
+    });
+  }, []);
+
   const renderMessage = useCallback(({ item }: { item: Message }) => {
     const isOwnMessage = item.sender_id === user?.id;
+    const isImage = item.type === 'image';
 
     return (
       <TouchableOpacity
-        onLongPress={() => handleLongPress(item)}
+        onLongPress={() => !isImage && handleLongPress(item)}
+        onPress={() => isImage && setPreviewImage(item.content)}
         delayLongPress={500}
         activeOpacity={0.8}
       >
@@ -163,20 +242,29 @@ export function ChatScreen({ route, navigation }: Props) {
           style={[
             styles.messageBubble,
             isOwnMessage ? styles.ownMessage : styles.otherMessage,
+            isImage && styles.imageBubble,
           ]}
         >
-          <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
-            {item.content}
-          </Text>
-          <View style={styles.messageFooter}>
-            <Text style={[styles.messageTime, isOwnMessage && styles.ownMessageTime]}>
+          {isImage ? (
+            <Image
+              source={{ uri: item.content }}
+              style={styles.messageImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={[styles.messageText, isOwnMessage && styles.ownMessageText]}>
+              {item.content}
+            </Text>
+          )}
+          <View style={[styles.messageFooter, isImage && styles.imageFooter]}>
+            <Text style={[styles.messageTime, isOwnMessage && styles.ownMessageTime, isImage && styles.imageTime]}>
               {dayjs(item.created_at).format('HH:mm')}
             </Text>
             {isOwnMessage && (
               <Ionicons
                 name={item.is_read ? 'checkmark-done' : 'checkmark'}
                 size={14}
-                color={item.is_read ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)'}
+                color={isImage ? '#fff' : (item.is_read ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)')}
               />
             )}
           </View>
@@ -237,6 +325,17 @@ export function ChatScreen({ route, navigation }: Props) {
       )}
 
       <View style={styles.inputContainer}>
+        <TouchableOpacity
+          style={styles.attachButton}
+          onPress={handlePickImage}
+          disabled={isUploadingImage}
+        >
+          {isUploadingImage ? (
+            <ActivityIndicator color={colors.primary} size="small" />
+          ) : (
+            <Ionicons name="image-outline" size={24} color={colors.primary} />
+          )}
+        </TouchableOpacity>
         <TextInput
           style={styles.input}
           placeholder="Type a message..."
@@ -282,6 +381,28 @@ export function ChatScreen({ route, navigation }: Props) {
               placeholder="Enter corrected text..."
             />
 
+            {/* Diff Preview */}
+            {selectedMessage?.content && correctionText.trim() && selectedMessage.content !== correctionText.trim() && (
+              <>
+                <Text style={styles.modalLabel}>Changes Preview:</Text>
+                <View style={styles.diffPreview}>
+                  <Text style={styles.diffText}>
+                    {renderDiffText(computeWordDiff(selectedMessage.content, correctionText.trim()))}
+                  </Text>
+                </View>
+                <View style={styles.diffLegend}>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendColor, { backgroundColor: '#ffcdd2' }]} />
+                    <Text style={styles.legendText}>Removed</Text>
+                  </View>
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendColor, { backgroundColor: '#c8e6c9' }]} />
+                    <Text style={styles.legendText}>Added</Text>
+                  </View>
+                </View>
+              </>
+            )}
+
             <Text style={styles.modalLabel}>Explanation (optional):</Text>
             <TextInput
               style={styles.explanationInput}
@@ -311,6 +432,34 @@ export function ChatScreen({ route, navigation }: Props) {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* Image Preview Modal */}
+      <Modal
+        visible={!!previewImage}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setPreviewImage(null)}
+      >
+        <TouchableOpacity
+          style={styles.imagePreviewOverlay}
+          activeOpacity={1}
+          onPress={() => setPreviewImage(null)}
+        >
+          {previewImage && (
+            <Image
+              source={{ uri: previewImage }}
+              style={styles.previewImage}
+              resizeMode="contain"
+            />
+          )}
+          <TouchableOpacity
+            style={styles.closePreviewButton}
+            onPress={() => setPreviewImage(null)}
+          >
+            <Ionicons name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </KeyboardAvoidingView>
   );
@@ -529,5 +678,95 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Image message styles
+  attachButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
+  },
+  imageBubble: {
+    padding: 4,
+    overflow: 'hidden',
+  },
+  messageImage: {
+    width: SCREEN_WIDTH * 0.6,
+    height: SCREEN_WIDTH * 0.6,
+    borderRadius: 12,
+  },
+  imageFooter: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  imageTime: {
+    color: '#fff',
+  },
+  imagePreviewOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_WIDTH,
+  },
+  closePreviewButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 22,
+  },
+  // Diff highlighting styles
+  diffPreview: {
+    backgroundColor: colors.backgroundAlt,
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  diffText: {
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  diffDelete: {
+    backgroundColor: '#ffcdd2',
+    color: '#c62828',
+    textDecorationLine: 'line-through',
+  },
+  diffInsert: {
+    backgroundColor: '#c8e6c9',
+    color: '#2e7d32',
+  },
+  diffLegend: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: 16,
+    marginTop: 8,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+  },
+  legendText: {
+    fontSize: 12,
+    color: colors.muted,
   },
 });
