@@ -19,6 +19,7 @@ import { api } from '../services/api';
 import { Avatar } from '../components/Avatar';
 import { startConversationAndNavigate } from '../utils/conversations';
 import type { Partner, PartnersStackParamList, MainTabParamList } from '../types';
+import { colors } from '../theme';
 
 dayjs.extend(relativeTime);
 
@@ -122,7 +123,7 @@ export function PartnersScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007aff" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -160,24 +161,24 @@ export function PartnersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: colors.backgroundAlt,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#111',
+    color: colors.primaryText,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.muted,
     marginTop: 4,
   },
   loadingContainer: {
@@ -191,7 +192,7 @@ const styles = StyleSheet.create({
   partnerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -211,29 +212,29 @@ const styles = StyleSheet.create({
   partnerName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#111',
+    color: colors.primaryText,
   },
   languages: {
     fontSize: 14,
-    color: '#007aff',
+    color: colors.primary,
     marginTop: 2,
   },
   bio: {
     fontSize: 13,
-    color: '#666',
+    color: colors.muted,
     marginTop: 4,
   },
   lastActive: {
     fontSize: 12,
-    color: '#999',
+    color: colors.mutedSecondary,
     marginTop: 4,
   },
   onlineText: {
-    color: '#34c759',
+    color: colors.success,
     fontWeight: '500',
   },
   chatButton: {
-    backgroundColor: '#007aff',
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 16,
@@ -250,11 +251,11 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: colors.primaryText,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#666',
+    color: colors.muted,
     marginTop: 8,
     textAlign: 'center',
   },

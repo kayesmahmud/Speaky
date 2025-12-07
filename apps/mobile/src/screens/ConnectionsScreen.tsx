@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/auth';
 import { Avatar } from '../components/Avatar';
 import { ListEmptyState } from '../components/ListEmptyState';
 import type { Connection, MessagesStackParamList } from '../types';
+import { colors } from '../theme';
 
 type NavigationProp = NativeStackNavigationProp<MessagesStackParamList>;
 
@@ -192,7 +193,7 @@ export function ConnectionsScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007aff" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -243,20 +244,20 @@ export function ConnectionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
   },
   header: {
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.borderStrong,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#111',
+    color: colors.primaryText,
   },
   listContent: {
     flexGrow: 1,
@@ -266,13 +267,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
   },
   conversationInfo: {
     flex: 1,
     marginLeft: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.borderStrong,
     paddingBottom: 12,
   },
   topRow: {
@@ -284,17 +285,17 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 17,
     fontWeight: '500',
-    color: '#111',
+    color: colors.primaryText,
   },
   userNameUnread: {
     fontWeight: '700',
   },
   timestamp: {
     fontSize: 13,
-    color: '#999',
+    color: colors.mutedSecondary,
   },
   timestampUnread: {
-    color: '#007aff',
+    color: colors.primary,
   },
   bottomRow: {
     flexDirection: 'row',
@@ -304,22 +305,22 @@ const styles = StyleSheet.create({
   lastMessage: {
     flex: 1,
     fontSize: 15,
-    color: '#666',
+    color: colors.muted,
     marginRight: 8,
   },
   lastMessageUnread: {
-    color: '#111',
+    color: colors.primaryText,
     fontWeight: '500',
   },
   youPrefix: {
-    color: '#999',
+    color: colors.mutedSecondary,
   },
   noMessages: {
-    color: '#999',
+    color: colors.mutedSecondary,
     fontStyle: 'italic',
   },
   unreadBadge: {
-    backgroundColor: '#007aff',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     minWidth: 24,
     height: 24,
@@ -333,13 +334,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pendingSection: {
-    backgroundColor: '#f8f8f8',
+    backgroundColor: colors.surfaceMuted,
     paddingTop: 12,
   },
   sectionHeader: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#666',
+    color: colors.muted,
     paddingHorizontal: 20,
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -347,13 +348,13 @@ const styles = StyleSheet.create({
   },
   sectionDivider: {
     height: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.borderStrong,
     marginTop: 8,
   },
   pendingCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginHorizontal: 12,
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: colors.placeholder,
   },
   pendingInfo: {
     flex: 1,
@@ -373,11 +374,11 @@ const styles = StyleSheet.create({
   pendingName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111',
+    color: colors.primaryText,
   },
   pendingStatus: {
     fontSize: 13,
-    color: '#666',
+    color: colors.muted,
     marginTop: 2,
   },
   pendingActions: {
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   acceptButton: {
-    backgroundColor: '#34c759',
+    backgroundColor: colors.success,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
@@ -396,13 +397,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   declineButton: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.borderStrong,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
   },
   declineButtonText: {
-    color: '#666',
+    color: colors.muted,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -421,13 +422,13 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    color: colors.primaryText,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 15,
-    color: '#666',
+    color: colors.muted,
     textAlign: 'center',
     lineHeight: 22,
   },

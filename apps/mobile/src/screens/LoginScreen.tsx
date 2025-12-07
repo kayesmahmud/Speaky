@@ -14,6 +14,7 @@ import { useForm, Controller } from 'react-hook-form';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList, LoginRequest } from '../types';
 import { useAuthStore } from '../stores/auth';
+import { colors } from '../theme';
 
 type Props = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>;
@@ -69,7 +70,7 @@ export function LoginScreen({ navigation }: Props) {
                 <TextInput
                   style={[styles.input, errors.email && styles.inputError]}
                   placeholder="your@email.com"
-                  placeholderTextColor="#999"
+          placeholderTextColor={colors.mutedSecondary}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
@@ -101,7 +102,7 @@ export function LoginScreen({ navigation }: Props) {
                   <TextInput
                     style={[styles.input, styles.passwordInput, errors.password && styles.inputError]}
                     placeholder="Enter password"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={colors.mutedSecondary}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
                     onBlur={onBlur}
@@ -151,7 +152,7 @@ export function LoginScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f7',
+    backgroundColor: colors.backgroundAlt,
   },
   content: {
     flex: 1,
@@ -161,12 +162,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#111',
+    color: colors.primaryText,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: colors.muted,
     marginBottom: 32,
   },
   form: {
@@ -178,19 +179,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
+    color: colors.primaryText,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
   inputError: {
-    borderColor: '#ff3b30',
+    borderColor: colors.danger,
   },
   passwordContainer: {
     position: 'relative',
@@ -204,16 +205,16 @@ const styles = StyleSheet.create({
     top: 16,
   },
   showPasswordText: {
-    color: '#007aff',
+    color: colors.primary,
     fontWeight: '600',
   },
   errorText: {
-    color: '#ff3b30',
+    color: colors.danger,
     fontSize: 12,
     marginTop: 4,
   },
   button: {
-    backgroundColor: '#007aff',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -233,10 +234,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    color: '#666',
+    color: colors.muted,
   },
   footerLink: {
-    color: '#007aff',
+    color: colors.primary,
     fontWeight: '600',
   },
 });
