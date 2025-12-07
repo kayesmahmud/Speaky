@@ -13,26 +13,16 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import dayjs from 'dayjs';
-import { io, Socket } from 'socket.io-client';
 import { api } from '../services/api';
-import { useAuthStore } from '../stores/auth';
 import type { Message, MessagesStackParamList } from '../types';
+import { useChatMessages } from '../hooks/useChatMessages';
 
 type Props = NativeStackScreenProps<MessagesStackParamList, 'Chat'>;
 
-function getSocketUrl(): string {
-  if (!__DEV__) {
-    return 'https://your-production-url.com';
-  }
-  return 'http://192.168.1.153:8000';
-}
-
 export function ChatScreen({ route, navigation }: Props) {
   const { connectionId, userName } = route.params;
-  const { user } = useAuthStore();
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -41,94 +31,45 @@ export function ChatScreen({ route, navigation }: Props) {
   const [showCorrectionModal, setShowCorrectionModal] = useState(false);
   const [correctionText, setCorrectionText] = useState('');
   const [explanationText, setExplanationText] = useState('');
-  const queryClient = useQueryClient();
   const listRef = useRef<FlatList<Message>>(null);
-  const socketRef = useRef<Socket | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { data: messages, isLoading } = useQuery({
-    queryKey: ['messages', connectionId],
-    queryFn: () => api.getMessages(connectionId),
-  });
+  const { messages, isLoading, socket, queryClient, user } = useChatMessages(connectionId);
 
-  // Socket.IO connection
+  // Typing indicator listener
   useEffect(() => {
-    const token = api.getToken();
-    if (!token) return;
-
-    const socketUrl = getSocketUrl();
-    socketRef.current = io(`${socketUrl}/ws/chat`, {
-      auth: { token },
-      transports: ['websocket'],
-    });
-
-    socketRef.current.on('connect', () => {
-      console.log('Socket connected');
-      socketRef.current?.emit('join_room', { connectionId });
-    });
-
-    socketRef.current.on('new_message', (message: Message) => {
-      queryClient.setQueryData(['messages', connectionId], (old: Message[] = []) => {
-        if (old.some(m => m.id === message.id)) return old;
-        return [...old, message];
-      });
-    });
-
-    socketRef.current.on('error', (error: { message: string }) => {
-      console.log('Socket error:', error.message);
-    });
-
-    socketRef.current.on('disconnect', () => {
-      console.log('Socket disconnected');
-    });
-
-    socketRef.current.on('user_typing', (data: { userId: number; isTyping: boolean }) => {
+    if (!socket) return;
+    const handler = (data: { userId: number; isTyping: boolean }) => {
       if (data.userId !== user?.id) {
         setPartnerTyping(data.isTyping);
       }
-    });
-
-    socketRef.current.on('messages_read', (data: { connectionId: number; readBy: number }) => {
-      if (data.readBy !== user?.id) {
-        // Update messages to show as read
-        queryClient.setQueryData(['messages', connectionId], (old: Message[] = []) =>
-          old.map((m) =>
-            m.sender_id === user?.id ? { ...m, is_read: true, read_at: new Date().toISOString() } : m
-          )
-        );
-      }
-    });
-
-    return () => {
-      socketRef.current?.emit('leave_room', { connectionId });
-      socketRef.current?.disconnect();
     };
-  }, [connectionId, queryClient, user?.id]);
+    socket.on('user_typing', handler);
+    return () => {
+      socket.off('user_typing', handler);
+    };
+  }, [socket, user?.id]);
 
-  // Mark messages as read when entering chat
-  useEffect(() => {
-    if (messages && messages.length > 0) {
-      socketRef.current?.emit('mark_read', { connectionId });
-    }
-  }, [messages, connectionId]);
+  const handleTyping = useCallback(
+    (text: string) => {
+      setMessageText(text);
 
-  const handleTyping = useCallback((text: string) => {
-    setMessageText(text);
+      if (!isTyping && text.length > 0) {
+        setIsTyping(true);
+        socket?.emit('typing', { connectionId, isTyping: true });
+      }
 
-    if (!isTyping && text.length > 0) {
-      setIsTyping(true);
-      socketRef.current?.emit('typing', { connectionId, isTyping: true });
-    }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      socketRef.current?.emit('typing', { connectionId, isTyping: false });
-    }, 2000);
-  }, [connectionId, isTyping]);
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        socket?.emit('typing', { connectionId, isTyping: false });
+      }, 2000);
+    },
+    [connectionId, isTyping, socket],
+  );
 
   const handleSend = useCallback(async () => {
     if (!messageText.trim() || isSending) return;
@@ -139,8 +80,8 @@ export function ChatScreen({ route, navigation }: Props) {
 
     try {
       // Send via Socket.IO for real-time
-      if (socketRef.current?.connected) {
-        socketRef.current.emit('send_message', {
+      if (socket?.connected) {
+        socket.emit('send_message', {
           connectionId,
           content,
           type: 'text',
@@ -159,7 +100,7 @@ export function ChatScreen({ route, navigation }: Props) {
     } finally {
       setIsSending(false);
     }
-  }, [messageText, connectionId, queryClient, isSending]);
+  }, [messageText, connectionId, queryClient, isSending, socket]);
 
   const handleLongPress = useCallback((message: Message) => {
     setSelectedMessage(message);

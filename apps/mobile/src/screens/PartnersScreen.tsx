@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Image,
   RefreshControl,
 } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +16,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { api } from '../services/api';
+import { Avatar } from '../components/Avatar';
 import { startConversationAndNavigate } from '../utils/conversations';
 import type { Partner, PartnersStackParamList, MainTabParamList } from '../types';
 
@@ -78,20 +78,12 @@ export function PartnersScreen() {
           onPress={() => handleAvatarPress(item)}
           activeOpacity={0.7}
         >
-          {item.avatar_url ? (
-            <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>
-                {item.name.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View
-            style={[
-              styles.onlineIndicator,
-              item.is_online ? styles.online : styles.offline,
-            ]}
+          <Avatar
+            uri={item.avatar_url}
+            name={item.name}
+            isOnline={item.is_online}
+            showStatus
+            size={56}
           />
         </TouchableOpacity>
 
@@ -211,40 +203,6 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     position: 'relative',
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-  },
-  avatarPlaceholder: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007aff',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  online: {
-    backgroundColor: '#34c759',
-  },
-  offline: {
-    backgroundColor: '#999',
   },
   partnerInfo: {
     flex: 1,

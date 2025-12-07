@@ -1,22 +1,13 @@
 import React, { useCallback } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  RefreshControl,
-  ActivityIndicator,
-  Alert,
-  FlatList,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator, Alert, FlatList, Image } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import dayjs from 'dayjs';
 import { api } from '../services/api';
 import { useAuthStore } from '../stores/auth';
+import { Avatar } from '../components/Avatar';
+import { ListEmptyState } from '../components/ListEmptyState';
 import type { Connection, MessagesStackParamList } from '../types';
 
 type NavigationProp = NativeStackNavigationProp<MessagesStackParamList>;
@@ -109,18 +100,13 @@ export function ConnectionsScreen() {
         activeOpacity={0.7}
       >
         {/* Avatar with online indicator */}
-        <View style={styles.avatarContainer}>
-          <Image
-            source={{
-              uri: item.partner?.avatar_url ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(item.partner?.name || 'User')}&background=007aff&color=fff`
-            }}
-            style={styles.avatar}
-          />
-          {item.partner?.is_online && (
-            <View style={styles.onlineIndicator} />
-          )}
-        </View>
+        <Avatar
+          uri={item.partner?.avatar_url}
+          name={item.partner?.name}
+          isOnline={item.partner?.is_online}
+          showStatus
+          size={56}
+        />
 
         {/* Conversation info */}
         <View style={styles.conversationInfo}>
@@ -242,13 +228,11 @@ export function ConnectionsScreen() {
         }
         ListEmptyComponent={
           pendingConnections.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="chatbubbles-outline" size={64} color="#999" />
-              <Text style={styles.emptyText}>No conversations yet</Text>
-              <Text style={styles.emptySubtext}>
-                Find language partners and start chatting!
-              </Text>
-            </View>
+            <ListEmptyState
+              emoji="💬"
+              title="No conversations yet"
+              subtitle="Find language partners and start chatting!"
+            />
           ) : null
         }
       />
@@ -283,26 +267,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     backgroundColor: '#fff',
-  },
-  avatarContainer: {
-    position: 'relative',
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#e0e0e0',
-  },
-  onlineIndicator: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: '#34c759',
-    borderWidth: 2,
-    borderColor: '#fff',
   },
   conversationInfo: {
     flex: 1,
