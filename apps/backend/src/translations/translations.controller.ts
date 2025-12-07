@@ -10,14 +10,14 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { TranslationsService } from './translations.service';
 import { TranslateMessageDto, TranslateTextDto } from './dto/translation.dto';
 
-@Controller('api/translations')
+@Controller('translations')
 @UseGuards(JwtAuthGuard)
 export class TranslationsController {
   constructor(private translationsService: TranslationsService) {}
 
   @Post('message')
   async translateMessage(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @Body() dto: TranslateMessageDto,
   ) {
     return this.translationsService.translateMessage(userId, dto);

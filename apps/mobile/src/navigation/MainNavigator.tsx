@@ -3,15 +3,17 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, StyleSheet } from 'react-native';
 import {
-  DiscoveryScreen,
   ConnectionsScreen,
   ChatScreen,
   ProfileScreen,
+  PartnersScreen,
+  FeedScreen,
 } from '../screens';
 import type { MainTabParamList, MessagesStackParamList } from '../types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const MessagesStack = createNativeStackNavigator<MessagesStackParamList>();
+const PartnersStack = createNativeStackNavigator<MessagesStackParamList>();
 
 function MessagesNavigator() {
   return (
@@ -33,11 +35,31 @@ function MessagesNavigator() {
   );
 }
 
+function PartnersNavigator() {
+  return (
+    <PartnersStack.Navigator>
+      <PartnersStack.Screen
+        name="ConversationList"
+        component={PartnersScreen}
+        options={{ headerShown: false }}
+      />
+      <PartnersStack.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={({ route }) => ({
+          headerShown: false,
+          title: route.params.userName,
+        })}
+      />
+    </PartnersStack.Navigator>
+  );
+}
+
 // Simple tab icons using text/emoji
 function TabIcon({ label, focused }: { label: string; focused: boolean }) {
   const icons: Record<string, string> = {
-    Discovery: '🔍',
-    Connections: '🤝',
+    Feed: '📰',
+    Partners: '🌍',
     Messages: '💬',
     Profile: '👤',
   };
@@ -64,13 +86,13 @@ export function MainNavigator() {
       })}
     >
       <Tab.Screen
-        name="Discovery"
-        component={DiscoveryScreen}
-        options={{ title: 'Discover' }}
+        name="Feed"
+        component={FeedScreen}
+        options={{ title: 'Feed' }}
       />
       <Tab.Screen
-        name="Connections"
-        component={ConnectionsScreen}
+        name="Partners"
+        component={PartnersNavigator}
         options={{ title: 'Partners' }}
       />
       <Tab.Screen

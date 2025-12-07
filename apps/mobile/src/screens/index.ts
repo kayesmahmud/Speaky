@@ -4,3 +4,5 @@ export { DiscoveryScreen } from './DiscoveryScreen';
 export { ConnectionsScreen } from './ConnectionsScreen';
 export { ChatScreen } from './ChatScreen';
 export { ProfileScreen } from './ProfileScreen';
+export { PartnersScreen } from './PartnersScreen';
+export { FeedScreen } from './FeedScreen';

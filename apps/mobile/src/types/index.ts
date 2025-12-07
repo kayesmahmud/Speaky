@@ -87,6 +87,48 @@ export interface Language {
   name: string;
 }
 
+// Partner types
+export interface Partner {
+  id: number;
+  name: string;
+  native_language: string | null;
+  learning_language: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  is_online: boolean;
+  last_active: string;
+}
+
+// Post types
+export interface Post {
+  id: number;
+  content: string;
+  image_url: string | null;
+  language: string | null;
+  created_at: string;
+  author: {
+    id: number;
+    name: string;
+    avatar_url: string | null;
+    native_language: string | null;
+    learning_language: string | null;
+  };
+  likes_count: number;
+  comments_count: number;
+  is_liked: boolean;
+}
+
+export interface PostComment {
+  id: number;
+  content: string;
+  created_at: string;
+  user: {
+    id: number;
+    name: string;
+    avatar_url: string | null;
+  };
+}
+
 // Discovery types
 export interface DiscoveryFilters {
   language?: string;
@@ -110,8 +152,8 @@ export type AuthStackParamList = {
 };
 
 export type MainTabParamList = {
-  Discovery: undefined;
-  Connections: undefined;
+  Feed: undefined;
+  Partners: undefined;
   Messages: undefined;
   Profile: undefined;
 };

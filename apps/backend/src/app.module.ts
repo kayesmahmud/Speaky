@@ -12,6 +12,8 @@ import { ChatModule } from './chat/chat.module';
 import { CorrectionsModule } from './corrections/corrections.module';
 import { TranslationsModule } from './translations/translations.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { PartnersModule } from './partners/partners.module';
+import { FeedModule } from './feed/feed.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -29,6 +31,8 @@ import { AppController } from './app.controller';
     DiscoveryModule,
     ConnectionsModule,
     MessagesModule,
+    PartnersModule,
+    FeedModule,
     ChatModule,
     CorrectionsModule,
     TranslationsModule,

@@ -13,7 +13,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UploadsService } from './uploads.service';
 
-@Controller('api/uploads')
+@Controller('uploads')
 @UseGuards(JwtAuthGuard)
 export class UploadsController {
   constructor(private uploadsService: UploadsService) {}
@@ -21,21 +21,21 @@ export class UploadsController {
   @Post('avatar')
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.uploadsService.uploadAvatar(userId, file);
   }
 
   @Delete('avatar')
-  async deleteAvatar(@CurrentUser('sub') userId: number) {
+  async deleteAvatar(@CurrentUser('id') userId: number) {
     return this.uploadsService.deleteAvatar(userId);
   }
 
   @Post('message/:connectionId')
   @UseInterceptors(FileInterceptor('file'))
   async uploadMessageImage(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @Param('connectionId', ParseIntPipe) connectionId: number,
     @UploadedFile() file: Express.Multer.File,
   ) {

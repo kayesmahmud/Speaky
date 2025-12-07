@@ -13,14 +13,14 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CorrectionsService } from './corrections.service';
 import { CreateCorrectionDto } from './dto/correction.dto';
 
-@Controller('api/corrections')
+@Controller('corrections')
 @UseGuards(JwtAuthGuard)
 export class CorrectionsController {
   constructor(private correctionsService: CorrectionsService) {}
 
   @Post()
   async createCorrection(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @Body() dto: CreateCorrectionDto,
   ) {
     return this.correctionsService.createCorrection(userId, dto);
@@ -28,20 +28,20 @@ export class CorrectionsController {
 
   @Get('message/:messageId')
   async getCorrectionsForMessage(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @Param('messageId', ParseIntPipe) messageId: number,
   ) {
     return this.correctionsService.getCorrectionsForMessage(userId, messageId);
   }
 
   @Get('my')
-  async getMyCorrections(@CurrentUser('sub') userId: number) {
+  async getMyCorrections(@CurrentUser('id') userId: number) {
     return this.correctionsService.getMyCorrections(userId);
   }
 
   @Delete(':id')
   async deleteCorrection(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @Param('id', ParseIntPipe) id: number,
   ) {
     return this.correctionsService.deleteCorrection(userId, id);

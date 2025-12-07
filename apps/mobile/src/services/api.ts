@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import type { AuthToken, LoginRequest, RegisterRequest, User, DiscoveryUser, Connection, Message, Correction, Translation, Language } from '../types';
+import type { AuthToken, LoginRequest, RegisterRequest, User, DiscoveryUser, Connection, Message, Correction, Translation, Language, Partner, Post, PostComment } from '../types';
 
 import { Platform } from 'react-native';
 
@@ -252,6 +252,62 @@ class ApiClient {
   // Health check
   async health(): Promise<{ status: string }> {
     return this.request<{ status: string }>('/health');
+  }
+
+  // Partners endpoints
+  async getPartners(): Promise<Partner[]> {
+    return this.request<Partner[]>('/partners');
+  }
+
+  async startConversation(partnerId: number): Promise<Connection> {
+    return this.request<Connection>(`/partners/${partnerId}/conversation`, {
+      method: 'POST',
+    });
+  }
+
+  // Feed endpoints
+  async getFeed(page: number = 1, limit: number = 20): Promise<Post[]> {
+    return this.request<Post[]>(`/feed?page=${page}&limit=${limit}`);
+  }
+
+  async createPost(content: string, imageUrl?: string, language?: string): Promise<Post> {
+    return this.request<Post>('/feed', {
+      method: 'POST',
+      body: JSON.stringify({ content, image_url: imageUrl, language }),
+    });
+  }
+
+  async getPost(postId: number): Promise<Post> {
+    return this.request<Post>(`/feed/${postId}`);
+  }
+
+  async deletePost(postId: number): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/feed/${postId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async likePost(postId: number): Promise<{ liked: boolean }> {
+    return this.request<{ liked: boolean }>(`/feed/${postId}/like`, {
+      method: 'POST',
+    });
+  }
+
+  async getComments(postId: number): Promise<PostComment[]> {
+    return this.request<PostComment[]>(`/feed/${postId}/comments`);
+  }
+
+  async addComment(postId: number, content: string): Promise<PostComment> {
+    return this.request<PostComment>(`/feed/${postId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    });
+  }
+
+  async deleteComment(commentId: number): Promise<{ success: boolean }> {
+    return this.request<{ success: boolean }>(`/feed/comments/${commentId}`, {
+      method: 'DELETE',
+    });
   }
 }
 

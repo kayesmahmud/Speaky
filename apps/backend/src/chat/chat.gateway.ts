@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { PartnersService } from '../partners/partners.service';
 
 interface AuthenticatedSocket extends Socket {
   userId?: number;
@@ -32,6 +33,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private jwtService: JwtService,
     private configService: ConfigService,
     private prisma: PrismaService,
+    private partnersService: PartnersService,
   ) {}
 
   async handleConnection(client: AuthenticatedSocket) {
@@ -56,6 +58,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       this.userSockets.get(userId)!.add(client.id);
 
+      // Set user online
+      this.partnersService.setUserOnline(userId);
+
       console.log(`User ${userId} connected with socket ${client.id}`);
     } catch (error) {
       console.log('WebSocket auth failed:', error);
@@ -70,6 +75,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         userSocketSet.delete(client.id);
         if (userSocketSet.size === 0) {
           this.userSockets.delete(client.userId);
+          // Set user offline only when all sockets disconnected
+          this.partnersService.setUserOffline(client.userId);
         }
       }
       console.log(`User ${client.userId} disconnected`);

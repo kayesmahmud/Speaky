@@ -4,14 +4,14 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateMessageDto } from './dto/message.dto';
 
-@Controller('api')
+@Controller()
 @UseGuards(JwtAuthGuard)
 export class MessagesController {
   constructor(private messagesService: MessagesService) {}
 
   @Get('connections/:connectionId/messages')
   async getMessages(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @Param('connectionId', ParseIntPipe) connectionId: number,
   ) {
     return this.messagesService.getMessages(userId, connectionId);
@@ -19,7 +19,7 @@ export class MessagesController {
 
   @Post('connections/:connectionId/messages')
   async createMessage(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @Param('connectionId', ParseIntPipe) connectionId: number,
     @Body() dto: CreateMessageDto,
   ) {
@@ -28,7 +28,7 @@ export class MessagesController {
 
   @Post('connections/:connectionId/messages/read')
   async markMessagesAsRead(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @Param('connectionId', ParseIntPipe) connectionId: number,
   ) {
     return this.messagesService.markMessagesAsRead(userId, connectionId);
@@ -36,14 +36,14 @@ export class MessagesController {
 
   @Get('connections/:connectionId/messages/unread')
   async getUnreadCount(
-    @CurrentUser('sub') userId: number,
+    @CurrentUser('id') userId: number,
     @Param('connectionId', ParseIntPipe) connectionId: number,
   ) {
     return this.messagesService.getUnreadCount(userId, connectionId);
   }
 
   @Get('messages/unread')
-  async getTotalUnreadCount(@CurrentUser('sub') userId: number) {
+  async getTotalUnreadCount(@CurrentUser('id') userId: number) {
     return this.messagesService.getTotalUnreadCount(userId);
   }
 }

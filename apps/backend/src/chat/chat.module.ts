@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ChatGateway } from './chat.gateway';
+import { PartnersModule } from '../partners/partners.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ChatGateway } from './chat.gateway';
       }),
       inject: [ConfigService],
     }),
+    PartnersModule,
   ],
   providers: [ChatGateway],
 })
