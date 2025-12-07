@@ -162,3 +162,8 @@ export type MessagesStackParamList = {
   ConversationList: undefined;
   Chat: { connectionId: number; userName: string };
 };
+
+export type PartnersStackParamList = {
+  PartnersList: undefined;
+  UserProfile: { userId: number; userName: string };
+};

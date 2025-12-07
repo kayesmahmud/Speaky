@@ -12,14 +12,19 @@ import {
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { CompositeNavigationProp } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { api } from '../services/api';
-import type { Partner, MessagesStackParamList } from '../types';
+import type { Partner, PartnersStackParamList, MainTabParamList } from '../types';
 
 dayjs.extend(relativeTime);
 
-type NavigationProp = NativeStackNavigationProp<MessagesStackParamList>;
+type NavigationProp = CompositeNavigationProp<
+  NativeStackNavigationProp<PartnersStackParamList, 'PartnersList'>,
+  BottomTabNavigationProp<MainTabParamList>
+>;
 
 export function PartnersScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -31,17 +36,30 @@ export function PartnersScreen() {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const handlePartnerPress = useCallback(async (partner: Partner) => {
+  // Navigate to Messages tab and open chat
+  const handleChatPress = useCallback(async (partner: Partner) => {
     try {
       // Start or get existing conversation
       const conversation = await api.startConversation(partner.id);
-      navigation.navigate('Chat', {
-        connectionId: conversation.id,
-        userName: partner.name,
-      });
+      // Navigate to Messages tab, then to Chat screen
+      navigation.navigate('Messages', {
+        screen: 'Chat',
+        params: {
+          connectionId: conversation.id,
+          userName: partner.name,
+        },
+      } as any);
     } catch (error) {
       console.error('Failed to start conversation:', error);
     }
+  }, [navigation]);
+
+  // Navigate to user profile when clicking avatar
+  const handleAvatarPress = useCallback((partner: Partner) => {
+    navigation.navigate('UserProfile', {
+      userId: partner.id,
+      userName: partner.name,
+    });
   }, [navigation]);
 
   const renderPartner = useCallback(({ item }: { item: Partner }) => {
@@ -50,12 +68,13 @@ export function PartnersScreen() {
       : `Active ${dayjs(item.last_active).fromNow()}`;
 
     return (
-      <TouchableOpacity
-        style={styles.partnerCard}
-        onPress={() => handlePartnerPress(item)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.avatarContainer}>
+      <View style={styles.partnerCard}>
+        {/* Avatar - clickable to go to profile */}
+        <TouchableOpacity
+          style={styles.avatarContainer}
+          onPress={() => handleAvatarPress(item)}
+          activeOpacity={0.7}
+        >
           {item.avatar_url ? (
             <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
           ) : (
@@ -71,9 +90,14 @@ export function PartnersScreen() {
               item.is_online ? styles.online : styles.offline,
             ]}
           />
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.partnerInfo}>
+        {/* Partner info - also clickable to profile */}
+        <TouchableOpacity
+          style={styles.partnerInfo}
+          onPress={() => handleAvatarPress(item)}
+          activeOpacity={0.7}
+        >
           <Text style={styles.partnerName}>{item.name}</Text>
           <Text style={styles.languages}>
             {item.native_language} → {item.learning_language}
@@ -86,14 +110,19 @@ export function PartnersScreen() {
           <Text style={[styles.lastActive, item.is_online && styles.onlineText]}>
             {lastActiveText}
           </Text>
-        </View>
+        </TouchableOpacity>
 
-        <View style={styles.chatButton}>
+        {/* Chat button - goes to Messages tab */}
+        <TouchableOpacity
+          style={styles.chatButton}
+          onPress={() => handleChatPress(item)}
+          activeOpacity={0.7}
+        >
           <Text style={styles.chatButtonText}>Chat</Text>
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </View>
     );
-  }, [handlePartnerPress]);
+  }, [handleAvatarPress, handleChatPress]);
 
   if (isLoading) {
     return (

@@ -6,3 +6,4 @@ export { ChatScreen } from './ChatScreen';
 export { ProfileScreen } from './ProfileScreen';
 export { PartnersScreen } from './PartnersScreen';
 export { FeedScreen } from './FeedScreen';
+export { UserProfileScreen } from './UserProfileScreen';

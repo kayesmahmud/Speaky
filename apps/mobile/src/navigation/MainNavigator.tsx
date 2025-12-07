@@ -8,12 +8,13 @@ import {
   ProfileScreen,
   PartnersScreen,
   FeedScreen,
+  UserProfileScreen,
 } from '../screens';
-import type { MainTabParamList, MessagesStackParamList } from '../types';
+import type { MainTabParamList, MessagesStackParamList, PartnersStackParamList } from '../types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const MessagesStack = createNativeStackNavigator<MessagesStackParamList>();
-const PartnersStack = createNativeStackNavigator<MessagesStackParamList>();
+const PartnersStack = createNativeStackNavigator<PartnersStackParamList>();
 
 function MessagesNavigator() {
   return (
@@ -39,17 +40,14 @@ function PartnersNavigator() {
   return (
     <PartnersStack.Navigator>
       <PartnersStack.Screen
-        name="ConversationList"
+        name="PartnersList"
         component={PartnersScreen}
         options={{ headerShown: false }}
       />
       <PartnersStack.Screen
-        name="Chat"
-        component={ChatScreen}
-        options={({ route }) => ({
-          headerShown: false,
-          title: route.params.userName,
-        })}
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{ headerShown: false }}
       />
     </PartnersStack.Navigator>
   );
